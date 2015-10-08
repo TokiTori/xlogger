@@ -1,0 +1,11 @@
+{application, xlogger, [
+	{description, ""},
+	{vsn, "1"},
+	{registered, []},
+	{applications, [
+		kernel,
+		stdlib
+	]},
+	{mod, {xlogger_app, []}},
+	{env, []}
+ ]}.
