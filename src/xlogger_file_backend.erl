@@ -61,7 +61,7 @@ get_fd(File, Options, State)->
 		_->
 			WriteBlockSize = proplists:get_value('write_block_size', Options, ?DEFAULT_WRITE_BLOCK_SIZE),
 			WriteDelay = proplists:get_value('write_delay', Options, ?DEFAULT_WRITE_DELAY),
-			{ok, FD} = file:open(File, [write, append, {encoding, utf8}, {delayed_write, WriteBlockSize, WriteDelay}]),
+			{ok, FD} = file:open(File, [write, append, {delayed_write, WriteBlockSize, WriteDelay}]),
 			FD
 	end,
 	ensure_fd_timer(),

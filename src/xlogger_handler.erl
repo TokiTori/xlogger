@@ -23,7 +23,6 @@ handle_cast({log, Params}, State)->
 		case X of 
 			{Dest, _}->
 				CompiledMsgPattern = proplists:get_value(Dest, CompiledMsgPatterns),
-				
 				write(X, Params, CompiledMsgPattern);
 			_->
 				ok
@@ -32,21 +31,23 @@ handle_cast({log, Params}, State)->
 	{noreply, State}.
 
 write(Config, Params, CompiledMsgPattern)->
+	Msg = unicode:characters_to_list(xlogger_formatter:format(CompiledMsgPattern, Params)),
+	MsgFormatted = io_lib:format("~ts~n",[Msg]),
 	case Config of
 		undefined->
 			io:format("file undefined~n"),
 			undefined;
 		{console, ConsoleProp}->
+			% Msg = unicode:characters_to_list(xlogger_formatter:format(CompiledMsgPattern, Params)),
+			io:format(MsgFormatted),
 			ok;
 		{file, FileProp}->
 			FilenamePattern = proplists:get_value(name, FileProp, ?DEFAULT_FILE_NAME),
 			File = xlogger_formatter:format(xlogger_formatter:compile(FilenamePattern), Params),
 			filelib:ensure_dir(File),
-			% io:format("File: ~p~n",[File]),
-			RotateCount = proplists:get_value(rotate, FileProp),
-			
-			case RotateCount of
-				_ when is_integer(RotateCount)->
+
+			case proplists:get_value(rotate, FileProp) of
+				RotateCount when is_integer(RotateCount)->
 					FileSizeLimit = proplists:get_value(size, FileProp, ?DEFAULT_FILE_SIZE_LIMIT),
 					CurrentFileLength = get_current_file_length(File),
 					if
@@ -59,8 +60,7 @@ write(Config, Params, CompiledMsgPattern)->
 				_->
 					ok
 			end,
-			Msg = xlogger_formatter:format(CompiledMsgPattern, Params),
-			Bin = list_to_binary([Msg, "\n"]),
+			Bin = unicode:characters_to_binary(MsgFormatted),
 			WriteDelay = proplists:get_value(write_delay, FileProp, ?DEFAULT_WRITE_DELAY),
 			xlogger_file_backend:write(File, Bin, WriteDelay),
 
