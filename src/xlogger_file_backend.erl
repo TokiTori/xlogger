@@ -28,7 +28,6 @@ handle_info(fd_check, State)->
 			LastActiveTime + ?FD_TIMEOUT < CurrentTime ->
 				file:datasync(IoDevice),
 				file:close(IoDevice),
-				io:format("Closing ~p~n",[Key]),
 				false;
 			true->
 				true
@@ -36,10 +35,8 @@ handle_info(fd_check, State)->
 	end, State),
 	case dict:size(NotExpiredFD) of
 		0->
-			io:format("timer not needed~n"),
 			ok;
 		_->
-			io:format("upgrade timer~n"),
 			ensure_fd_timer()
 	end,
 	{noreply, NotExpiredFD}.
@@ -87,5 +84,9 @@ create_fd_check_timer()->
 	put(fd_check_timer, TimerRef).
 
 terminate(Reason, State)->
-	io:format("Terminate: ~p~n",[Reason]),
+	lists:foreach(fun(X)->
+		{IoDevice, _} = X,
+		file:datasync(IoDevice),
+		file:close(IoDevice)
+	end, dict:to_list(State)),
 	ok.
