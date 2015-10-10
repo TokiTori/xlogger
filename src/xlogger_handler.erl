@@ -117,6 +117,7 @@ get_compiled_patterns(Args)->
 		case proplists:get_value(dest, Args) of
 			Dest when is_list(Dest), length(Dest)>0 ->
 				CommonMsgPattern = proplists:get_value(msg_pattern, Args),
+				io:format("CommonMsgPattern: ~p~n",[CommonMsgPattern]),
 				lists:map(fun(Handler)->
 					case Handler of
 						{H, HParams}->

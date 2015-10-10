@@ -5,11 +5,13 @@
 -define(DEFAULT_MSG_PATTERN, ["[", '%HH', ":", '%mm', ":", '%ss', "] ", '%uptime', " ", '%level', ": ", '%msg']).
 
 compile(Pattern) when is_list(Pattern)->
-	{struct, CompiledPattern} = f(Pattern),
+	A = f(Pattern),
+	io:format("A: ~p, B: ~p~n",[Pattern, A]),
+	{struct, CompiledPattern} = A,
 	CompiledPattern;
 
 compile(_)->
-	compile(?DEFAULT_MSG_PATTERN).
+	?DEFAULT_MSG_PATTERN.
 
 format(WrongPattern, Params) when WrongPattern == undefined; WrongPattern == []->
 	format(?DEFAULT_MSG_PATTERN, Params);

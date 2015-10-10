@@ -12,8 +12,9 @@
 	[
 		{dest, [
 			{console, []},
-			{file, [{name, "logs/default.%level.log"}]}
-		]}
+			{file, [{name, "logs/default.%level.log"}, {rotate, 6}, {size, 5242880}]}
+		]}, 
+		{msg_pattern, "[%HH:%mm:%ss] %uptime: %msg"}
 	]).
 
 %% ===================================================================
