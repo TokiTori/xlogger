@@ -1,6 +1,9 @@
 -module(xlogger).
 
--export([info/2, debug/2, warning/2, error/2, log/3]).
+-export([log/2, log/3, info/2, debug/2, warning/2, error/2]).
+
+log(Level, Msg)->
+	log(default, Level, Msg).
 
 log(Handler, Level, Msg)->
 	{UserModule, ExecutedModule} = get_module_name(),
