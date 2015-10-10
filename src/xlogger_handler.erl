@@ -5,18 +5,14 @@
 -include("const.hrl").
 
 start_link(Id, Config)->
-	io:format("Config:~p~n",[Config]),
 	gen_server:start_link({local, Id}, ?MODULE, [Id | Config], []).
 
 init([Id | Config])->
-	io:format("handler ~p started! with Config: ~p~n", [Id, Config]),
 	CompiledMsgPatterns = get_compiled_patterns(Config),
 	put(handler_id, Id),
 	{ok, dict:from_list([{config, Config}, {compiled_patterns, CompiledMsgPatterns}])}.
 
 handle_cast({log, Params}, State)->
-	% io:format("handle_cast dict: ~p~n",[State]),
-	% io:format("handler ~p: ~p~n",[get(handler_id), self()]),
 	Config = dict:fetch(config, State),
 	CompiledMsgPatterns = dict:fetch(compiled_patterns, State),
 	lists:foreach(fun(X)->
@@ -37,11 +33,9 @@ write(Config, Params, CompiledMsgPattern)->
 	MsgFormatted = io_lib:format("~ts~n",[Msg]),
 	case Config of
 		undefined->
-			io:format("file undefined~n"),
-			undefined;
-		{console, ConsoleProp}->
-			io:format(MsgFormatted),
 			ok;
+		{console, ConsoleProp}->
+			io:format(MsgFormatted);
 		{file, FileProp}->
 			FilenamePattern = proplists:get_value(name, FileProp, ?DEFAULT_FILE_NAME),
 			File = xlogger_formatter:format(xlogger_formatter:compile(FilenamePattern), Params),
