@@ -27,7 +27,6 @@ handle_cast({log, Params}, State)->
 	{noreply, State}.
 
 write(Config, Params, CompiledMsgPattern)->
-
 	M1 = xlogger_formatter:format(CompiledMsgPattern, Params),
 	Msg = unicode:characters_to_list(M1),
 	MsgFormatted = io_lib:format("~ts~n",[Msg]),
