@@ -1,12 +1,15 @@
 -module(xlogger_formatter).
 -export([compile/1, format/2]).
 -define(AVAILABLE_MSG_PARAMS, lists:reverse(lists:sort(["%YYYY", "%YY", "%MM", "%M", "%DD", "%D", "%H", "%HH", 
-	"%m","%mm", "%s", "%ss", "%level", "%msg", "%uptime", "%handler"]))).
+	"%m","%mm", "%s", "%ss", "%level", "%msg", "%uptime", "%handler", "%user_module", "%module"]))).
 -define(DEFAULT_MSG_PATTERN, ["[", '%HH', ":", '%mm', ":", '%ss', "] ", '%uptime', " ", '%level', ": ", '%msg']).
 
-compile(Pattern)->
+compile(Pattern) when is_list(Pattern)->
 	{struct, CompiledPattern} = f(Pattern),
-	CompiledPattern.
+	CompiledPattern;
+
+compile(_)->
+	compile(?DEFAULT_MSG_PATTERN).
 
 format(WrongPattern, Params) when WrongPattern == undefined; WrongPattern == []->
 	format(?DEFAULT_MSG_PATTERN, Params);
@@ -48,6 +51,8 @@ format(CompiledPattern, Params)->
 				proplists:get_value(msg, Params);
 			'%handler'->
 				proplists:get_value(handler, Params);
+			'%user_module'->
+				proplists:get_value(user_module, Params);
 			'%module'->
 				proplists:get_value(module, Params);
 			_->

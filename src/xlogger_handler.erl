@@ -31,14 +31,15 @@ handle_cast({log, Params}, State)->
 	{noreply, State}.
 
 write(Config, Params, CompiledMsgPattern)->
-	Msg = unicode:characters_to_list(xlogger_formatter:format(CompiledMsgPattern, Params)),
+
+	M1 = xlogger_formatter:format(CompiledMsgPattern, Params),
+	Msg = unicode:characters_to_list(M1),
 	MsgFormatted = io_lib:format("~ts~n",[Msg]),
 	case Config of
 		undefined->
 			io:format("file undefined~n"),
 			undefined;
 		{console, ConsoleProp}->
-			% Msg = unicode:characters_to_list(xlogger_formatter:format(CompiledMsgPattern, Params)),
 			io:format(MsgFormatted),
 			ok;
 		{file, FileProp}->
@@ -127,7 +128,7 @@ get_compiled_patterns(Args)->
 						{H, HParams}->
 							P = case proplists:get_value(msg_pattern, HParams) of
 								undefined->
-									CommonMsgPattern;
+									xlogger_formatter:compile(CommonMsgPattern);
 								MsgPattern->
 									xlogger_formatter:compile(MsgPattern)
 							end,
