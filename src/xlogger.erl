@@ -51,7 +51,7 @@ get_module_name()->
 	end.
 
 get_module_name([], _)->
-	undefined;
+	undefined_module;
 
 get_module_name([Head | Tail] = Stacktrace, ExcludedModules)->
 	ModuleName = erlang:element(1, Head),
