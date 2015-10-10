@@ -10,7 +10,9 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    xlogger_sup:start_link().
+    A = xlogger_sup:start_link(),
+    spawn(xlogger_test, test, []),
+    A.
 
 stop(_State) ->
     ok.
