@@ -32,7 +32,7 @@ dispatch(Params)->
 	ok.
 
 check_handler(HandlerName)->
-	case application:get_env(handlers) of 
+	case application:get_env(xlogger, handlers) of 
 		{ok, Handlers} when is_list(Handlers)->
 			case proplists:get_value(HandlerName, Handlers) of 
 				undefined->
