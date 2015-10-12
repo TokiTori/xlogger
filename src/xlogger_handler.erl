@@ -1,6 +1,6 @@
 -module(xlogger_handler).
 -behavior(gen_server).
--export([start_link/2, init/1, handle_cast/2]).
+-export([start_link/2, init/1, handle_cast/2, terminate/2]).
 
 -include("const.hrl").
 
@@ -139,3 +139,6 @@ get_compiled_patterns(Args)->
 			io:format("Error: ~p, ~p, ~p~n",[Type, What, erlang:get_stacktrace()]),
 			[]
 	end.
+
+terminate(Reason, State)->
+	ok.
