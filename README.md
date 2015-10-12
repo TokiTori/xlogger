@@ -1,5 +1,5 @@
 # xlogger 
-xlogger is an erlang logging application with rich features
+xlogger is an erlang logging application with features such as files rotation with size limit, filename formatting, message formatting. This logger has pre-defined log levels: info, debug, warning, error. You can specify your own log level.
 # Usage
 
 ```
