@@ -48,7 +48,13 @@ format(CompiledPattern, Params)->
 			'%level'->
 				proplists:get_value(level, Params);
 			'%msg'->
-				proplists:get_value(msg, Params);
+				Message = proplists:get_value(msg, Params),
+				case is_string(Message) of
+					true->
+						Message;
+					_->
+						io_lib:format("~p",[Message])
+				end;
 			'%handler'->
 				proplists:get_value(handler, Params);
 			'%user_module'->
@@ -97,3 +103,11 @@ f(P)->
 
 pad2(Value)->
 	lists:flatten(io_lib:format("~2..0w",[Value])).
+
+is_string([])->
+	true;
+is_string([H | T]) when is_integer(H)->
+	is_string(T);
+
+is_string(_)->
+	false.
