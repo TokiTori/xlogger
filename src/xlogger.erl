@@ -1,9 +1,20 @@
 -module(xlogger).
 
--export([log/2, log/3, info/2, debug/2, warning/2, error/2]).
+-export([log/1, log/2, log/3, log/4, 
+	info/2, info/3,
+	debug/2, debug/3,
+	warning/2, warning/3,
+	error/2, error/3]).
+
+log(Msg)->
+	log(default, info, Msg).
 
 log(Level, Msg)->
 	log(default, Level, Msg).
+
+log(Handler, Level, Format, Args)->
+	IOF = lists:flatten(io_lib:format(Format, Args)),
+	log(Handler, Level, IOF).
 
 log(Handler, Level, Msg)->
 	{UserModule, ExecutedModule} = get_module_name(),
@@ -19,14 +30,26 @@ log(Handler, Level, Msg)->
 info(Handler, Msg)->
 	log(Handler, info, Msg).
 
+info(Handler, Format, Args)->
+	log(Handler, info, Format, Args).
+
 debug(Handler, Msg)->
 	log(Handler, debug, Msg).
+
+debug(Handler, Format, Args)->
+	log(Handler, debug, Format, Args).
 
 warning(Handler, Msg)->
 	log(Handler, warning, Msg).
 
+warning(Handler, Format, Args)->
+	log(Handler, warning, Format, Args).
+
 error(Handler, Msg)->
 	log(Handler, error, Msg).
+
+error(Handler, Format, Args)->
+	log(Handler, error, Format, Args).
 
 get_module_name()->
 	try 
