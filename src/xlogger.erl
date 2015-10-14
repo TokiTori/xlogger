@@ -1,20 +1,19 @@
 -module(xlogger).
 
--export([log/1, log/2, log/3, log/4, 
-	info/2, info/3,
-	debug/2, debug/3,
-	warning/2, warning/3,
-	error/2, error/3]).
+-export([
+		log/1, log/2, log/3, info/2, debug/2, warning/2, error/2, 
+		log_format/2, log_format/3, log_format/4, info_format/3, debug_format/3, warning_format/3, error_format/3
+	]).
+
+%% ===================================================================
+%% API for prepared messages
+%% ===================================================================
 
 log(Msg)->
-	log(default, info, Msg).
+	log(info, Msg).
 
 log(Level, Msg)->
 	log(default, Level, Msg).
-
-log(Handler, Level, Format, Args)->
-	IOF = lists:flatten(io_lib:format(Format, Args)),
-	log(Handler, Level, IOF).
 
 log(Handler, Level, Msg)->
 	{UserModule, ExecutedModule} = get_module_name(),
@@ -30,27 +29,42 @@ log(Handler, Level, Msg)->
 info(Handler, Msg)->
 	log(Handler, info, Msg).
 
-info(Handler, Format, Args)->
-	log(Handler, info, Format, Args).
-
 debug(Handler, Msg)->
 	log(Handler, debug, Msg).
-
-debug(Handler, Format, Args)->
-	log(Handler, debug, Format, Args).
 
 warning(Handler, Msg)->
 	log(Handler, warning, Msg).
 
-warning(Handler, Format, Args)->
-	log(Handler, warning, Format, Args).
-
 error(Handler, Msg)->
 	log(Handler, error, Msg).
 
-error(Handler, Format, Args)->
-	log(Handler, error, Format, Args).
+%% ===================================================================
+%% API for format message with arguments
+%% ===================================================================
 
+log_format(Format, Args)->
+	log_format(info, Format, Args).
+
+log_format(Level, Format, Args)->
+	log_format(default, Level, Format, Args).
+
+log_format(Handler, Level, Format, Args)->
+	FormattedMessage = lists:flatten(io_lib:format(Format, Args)),
+	log(Handler, Level, FormattedMessage).
+
+info_format(Handler, Format, Args)->
+	log_format(Handler, info, Format, Args).
+	
+debug_format(Handler, Format, Args)->
+	log_format(Handler, debug, Format, Args).
+	
+warning_format(Handler, Format, Args)->
+	log_format(Handler, warning, Format, Args).
+
+error_format(Handler, Format, Args)->
+	log_format(Handler, error, Format, Args).
+
+%% @doc Trying to determine module which executes xlogger
 get_module_name()->
 	try 
 		erlang:error("that is not error"),
@@ -71,8 +85,9 @@ get_module_name()->
 						ModuleName
 				end
 			end, code:all_loaded()),
-			UserModule = get_module_name(erlang:get_stacktrace(), lists:flatten([ExcludeModules, ?MODULE])),
-			ExecutedModule = get_module_name(erlang:get_stacktrace(), [?MODULE]),
+			Stacktrace = erlang:get_stacktrace(),
+			UserModule = get_module_name(Stacktrace, lists:flatten([ExcludeModules, ?MODULE])),
+			ExecutedModule = get_module_name(Stacktrace, [?MODULE]),
 			{UserModule, ExecutedModule}
 	end.
 
