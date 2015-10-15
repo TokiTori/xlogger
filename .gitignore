@@ -1,0 +1,5 @@
+.rebar/
+/ebin
+/logs
+info.txt
+erl_crash.dump
