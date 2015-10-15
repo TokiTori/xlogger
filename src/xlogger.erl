@@ -23,7 +23,8 @@ log(Handler, Level, Msg)->
 		{msg, Msg}, 
 		{pid, self()},
 		{user_module, UserModule},
-		{module, ExecutedModule}
+		{module, ExecutedModule},
+		{time, calendar:local_time()}
 	]).
 
 info(Handler, Msg)->
