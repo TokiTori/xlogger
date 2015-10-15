@@ -17,7 +17,7 @@ log(Level, Msg)->
 
 log(Handler, Level, Msg)->
 	{UserModule, ExecutedModule} = get_module_name(),
-	xlogger_handler_sup:dispatch([
+	xlogger_front:dispatch([
 		{handler, Handler}, 
 		{level, Level}, 
 		{msg, Msg}, 
