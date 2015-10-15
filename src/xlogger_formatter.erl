@@ -1,4 +1,5 @@
 -module(xlogger_formatter).
+
 -export([compile/1, format/2]).
 -define(AVAILABLE_MSG_PARAMS, lists:reverse(lists:sort(["%YYYY", "%YY", "%MM", "%M", "%DD", "%D", "%H", "%HH", 
 	"%m","%mm", "%s", "%ss", "%level", "%msg", "%uptime", "%handler", "%user_module", "%module"]))).
@@ -15,7 +16,7 @@ format(WrongPattern, Params) when WrongPattern == undefined; WrongPattern == []-
 	format(?DEFAULT_MSG_PATTERN, Params);
 
 format(CompiledPattern, Params)->
-	{{Year, Month, Day}, {Hour, Minute, Second}} = calendar:local_time(),
+	{{Year, Month, Day}, {Hour, Minute, Second}} = proplists:get_value(time, Params),
 	FormattedString = lists:concat(lists:map(fun(X)->
 		case X of
 			'%YYYY'->
