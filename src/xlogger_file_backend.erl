@@ -1,6 +1,7 @@
 -module(xlogger_file_backend).
+
 -behavior(gen_server).
--export([start_link/0, init/1, handle_cast/2, handle_info/2, terminate/2]).
+-export([start_link/0, init/1, handle_info/2, handle_call/3, handle_cast/2, code_change/3, terminate/2]).
 -export([write/2, write/3]).
 
 -include("const.hrl").
@@ -22,7 +23,7 @@ write(File, Data, Options) when is_list(File), is_binary(Data), is_list(Options)
 
 handle_info(fd_check, State)->
 	CurrentTime = erlang:system_time(milli_seconds),
-	NotExpiredFD = dict:filter(fun(Key, Value)->
+	NotExpiredFD = dict:filter(fun(_Key, Value)->
 		{IoDevice, LastActiveTime} = Value,
 		if
 			LastActiveTime + ?FD_TIMEOUT < CurrentTime ->
@@ -41,6 +42,9 @@ handle_info(fd_check, State)->
 	end,
 	{noreply, NotExpiredFD}.
 
+handle_call(_, _, State)->
+	{reply, ok, State}.
+
 handle_cast({write, File, Data, Options}, State)->
 	NewState = write_data(File, Data, Options, State),
 	ensure_fd_timer(),
@@ -48,7 +52,7 @@ handle_cast({write, File, Data, Options}, State)->
 
 write_data(File, Data, Options, State)->
 	{NewState, IoDevice} = get_fd(File, Options, State),
-	WriteResult = file:write(IoDevice, Data),
+	file:write(IoDevice, Data),
 	NewState.
 
 get_fd(File, Options, State)->
@@ -83,7 +87,10 @@ create_fd_check_timer()->
 	TimerRef = erlang:send_after(?FD_EXPIRATION_CHECK_TIMEOUT, self(), fd_check),
 	put(fd_check_timer, TimerRef).
 
-terminate(Reason, State)->
+code_change(_OldVsn, _State, _Extra)->
+	{ok, _State}.
+
+terminate(_Reason, State)->
 	lists:foreach(fun(X)->
 		{IoDevice, _} = X,
 		file:datasync(IoDevice),

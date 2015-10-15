@@ -1,16 +1,23 @@
 -module(xlogger_handler).
+
 -behavior(gen_server).
--export([start_link/2, init/1, handle_cast/2, terminate/2]).
+-export([start_link/2, init/1, handle_info/2, handle_call/3, handle_cast/2, code_change/3, terminate/2]).
 
 -include("const.hrl").
 
 start_link(Id, Config)->
-	gen_server:start_link({local, Id}, ?MODULE, [Id | Config], []).
+	gen_server:start_link(?MODULE, [Id, Config], []).
 
-init([Id | Config])->
+init([Id, Config])->
 	CompiledMsgPatterns = get_compiled_patterns(Config),
 	put(handler_id, Id),
 	{ok, dict:from_list([{config, Config}, {compiled_patterns, CompiledMsgPatterns}])}.
+
+handle_info(_, State)->
+	{noreply, State}.
+
+handle_call(_, _, State)->
+	{reply, ok, State}.
 
 handle_cast({log, Params}, State)->
 	Config = dict:fetch(config, State),
@@ -34,7 +41,7 @@ write(Config, Params, CompiledMsgPattern)->
 	case Config of
 		undefined->
 			ok;
-		{console, ConsoleProp}->
+		{console, _ConsoleProp}->
 			io:format(MsgFormatted);
 		{file, FileProp}->
 			FilenamePattern = proplists:get_value(name, FileProp, ?DEFAULT_FILE_NAME),
@@ -140,5 +147,9 @@ get_compiled_patterns(Args)->
 			[]
 	end.
 
-terminate(Reason, State)->
+code_change(_OldVsn, _State, _Extra)->
+	{ok, _State}.
+
+terminate(_Reason, _State)->
+	io:format("handler terminated with reason: ~p~n",[_Reason]),
 	ok.
