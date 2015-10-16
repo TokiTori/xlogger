@@ -24,7 +24,7 @@ Second function with two parameters uses default handler.
 In other functions HandlerName is a name of handler from configuration. If the handler with this name not found will be used default handler with default configuration. Also default configuraion will be used by using function <code>xlogger:log/2</code>.
 Functions has two variants: prepared Message or Format string with Arguments.
 
-# Confiuration
+# Configuration
 Configuration is a proplist. The root of this proplist has only property 'handlers', which defines handlers for logger. Handler can contain 'dest' - destinations of log and 'msg_pattern' - common message pattern for all destinations in current handler. Destinations can be two types (at this moment): 'console', 'file'. Console type has no properties yet. File type has properties 'name', 'size', 'rotate', 'msg_pattern', 'write_delay'. Properties 'name' and 'msg_pattern' can be formatted by next params:
 ```
 %YYYY, %YY		Year in four-digit format and two-digit format
