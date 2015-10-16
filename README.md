@@ -26,15 +26,17 @@ Functions has two variants: prepared Message or Format string with Arguments.
 
 # Confiuration
 Configuration is a proplist. The root of this proplist has only property 'handlers', which defines handlers for logger. Handler can contain 'dest' - destinations of log and 'msg_pattern' - common message pattern for all destinations in current handler. Destinations can be two types (at this moment): 'console', 'file'. Console type has no properties yet. File type has properties 'name', 'size', 'rotate', 'msg_pattern', 'write_delay'. Properties 'name' and 'msg_pattern' can be formatted by next params:
-Year:			%YYYY, %YY
-Month:			%MM, %M
-Day:			%DD, %D
-Hour:			%H, %HH
-Minute:			%m, %mm
-Second:			%s, %ss
-Level:			%level			Curent log level of message
-Message:		%msg			Just a message
-VM Uptime:		%uptime			Uptime of virtual machine in ms
-Handler:		%handler
-User module:	%user_module	This is a module, invoked current message and not in ``code:lib_dir()`` directory
-Module:			%module			This is a module, invoked current message
+```
+%YYYY, %YY		Year in four-digit format and two-digit format
+%MM, %M			Months and months with leading zero
+%DD, %D			Days and days with leading zero
+%H, %HH			Hours and hours with leading zero
+%m, %mm			Minutes and minutes with leading zero
+%s, %ss			Seconds and seconds with leading zero
+%level			Curent log level of message
+%msg			Just a message
+%uptime			Uptime of virtual machine in ms
+%handler		Handler
+%user_module	This is a module, invoked current message and not in 'code:lib_dir()' directory
+%module			This is a module, invoked current message
+```
