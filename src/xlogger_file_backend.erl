@@ -2,9 +2,13 @@
 
 -behavior(gen_server).
 -export([start_link/0, init/1, handle_info/2, handle_call/3, handle_cast/2, code_change/3, terminate/2]).
--export([write/2, write/3]).
+-export([write/3]).
+-define(FD_TIMEOUT, 30*1000).
+-define(FD_EXPIRATION_CHECK_TIMEOUT, 10*1000).
+-define(DEFAULT_FILE_SIZE_LIMIT, 1024*1024*6).
+-define(DEFAULT_WRITE_BLOCK_SIZE, 1024*4).
+-define(DEFAULT_WRITE_DELAY, 500).
 
--include("const.hrl").
 
 start_link()->
 	gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
@@ -12,19 +16,13 @@ start_link()->
 init([])->
 	{ok, dict:new()}.
 
-write(File, Data)->
-	write(File, Data, []).
-
-write(File, Data, WriteDelay) when is_list(File), is_binary(Data), is_integer(WriteDelay)->
-	write(File, Data, [{write_delay, WriteDelay}]);
-
-write(File, Data, Options) when is_list(File), is_binary(Data), is_list(Options)->
-	gen_server:cast(?MODULE, {write, File, Data, Options}).
+write(Filename, Data, FileOptions) when is_binary(Data), is_list(FileOptions)->
+	gen_server:cast(?MODULE, {write, Filename, Data, FileOptions}).
 
 handle_info(fd_check, State)->
 	CurrentTime = erlang:system_time(milli_seconds),
 	NotExpiredFD = dict:filter(fun(_Key, Value)->
-		{IoDevice, LastActiveTime} = Value,
+		{IoDevice, LastActiveTime, _} = Value,
 		if
 			LastActiveTime + ?FD_TIMEOUT < CurrentTime ->
 				file:datasync(IoDevice),
@@ -45,29 +43,97 @@ handle_info(fd_check, State)->
 handle_call(_, _, State)->
 	{reply, ok, State}.
 
-handle_cast({write, File, Data, Options}, State)->
-	NewState = write_data(File, Data, Options, State),
-	ensure_fd_timer(),
+handle_cast({write, Filename, Data, FileOptions}, State)->
+	NewState = write_data(Filename, Data, FileOptions, State),
 	{noreply, NewState}.
 
-write_data(File, Data, Options, State)->
-	{NewState, IoDevice} = get_fd(File, Options, State),
-	file:write(IoDevice, Data),
-	NewState.
+write_data(Filename, Data, FileOptions, State)->
+	case get_fd(Filename, FileOptions, State) of
+		{IoDevice, FileSize} when is_pid(IoDevice)->
+			ensure_fd_timer(),
+			file:write(IoDevice, Data),
+			dict:store(Filename, {IoDevice, erlang:system_time(milli_seconds), FileSize + size(Data)}, State);
+		_->
+			io:format("Can't open file~n"),
+			State
+	end.
 
-get_fd(File, Options, State)->
-	IoDevice = case dict:find(File, State) of
-		{ok, {FD, _}}->
+get_fd(Filename, FileOptions, State)->
+	case dict:find(Filename, State) of
+		{ok, {FD, _, CurrentSize}} when is_pid(FD)->
+			case check_file_rotation(Filename, FileOptions, CurrentSize) of
+				true->
+					%% closing previous file descriptor and open new
+					file:datasync(FD),
+					file:close(FD),
+					open_fd(Filename, FileOptions);
+				_->
+					%% check whether file exists
+					case filelib:is_regular(Filename) of
+						true->
+							{FD, CurrentSize};
+						_->
+							open_fd(Filename, FileOptions)
+					end
+			end;
+		_->
+			open_fd(Filename, FileOptions)
+	end.
+
+check_file_rotation(File, FileOptions, CurrentSize)->
+	case proplists:get_value(rotate, FileOptions) of
+		RotateCount when is_integer(RotateCount)->
+		FileSizeLimit = proplists:get_value(size, FileOptions, ?DEFAULT_FILE_SIZE_LIMIT),
+			if
+				CurrentSize >= FileSizeLimit->
+					rotate_files(File, RotateCount),
+					true;
+				true->
+					false
+			end;
+		_->
+			false
+	end.
+
+rotate_files(Filename, RotateCount) when RotateCount<1->
+	file:delete(Filename);
+
+rotate_files(Filename, RotateCount)->
+	RotatedFileBase = lists:concat([Filename, "."]),
+	ExistedFiles = filelib:wildcard(lists:concat([RotatedFileBase, "*"])),
+	FullSequence = [lists:concat([RotatedFileBase, X]) || X <- lists:seq(1, RotateCount)],
+
+	ExistedContinuousIndexesSequence = lists:takewhile(fun(X)->
+		SeqFilename = lists:concat([RotatedFileBase, X]),
+		lists:member(SeqFilename, ExistedFiles)
+	end, lists:seq(1, RotateCount)),
+
+	OrderedExistedIndexes = lists:reverse(lists:sort(lists:flatten(ExistedContinuousIndexesSequence))),
+	lists:foreach(fun(Index)->
+		IndexedFilename = lists:concat([RotatedFileBase, Index]),
+		if
+			Index < RotateCount->
+				NewFilename = lists:concat([RotatedFileBase, Index + 1]),
+				file:rename(IndexedFilename, NewFilename);
+			true->
+				file:delete(IndexedFilename)
+		end
+	end, OrderedExistedIndexes),
+	NewMainFilename = lists:concat([RotatedFileBase, "1"]),
+	file:rename(Filename, NewMainFilename).
+
+open_fd(Filename, FileOptions)->
+	filelib:ensure_dir(Filename),
+	FileSize = filelib:file_size(Filename),
+	WriteBlockSize = proplists:get_value('write_block_size', FileOptions, ?DEFAULT_WRITE_BLOCK_SIZE),
+	WriteDelay = proplists:get_value('write_delay', FileOptions, ?DEFAULT_WRITE_DELAY),
+	IoDevice = case file:open(Filename, [write, append, {delayed_write, WriteBlockSize, WriteDelay}]) of
+		{ok, FD}->
 			FD;
 		_->
-			WriteBlockSize = proplists:get_value('write_block_size', Options, ?DEFAULT_WRITE_BLOCK_SIZE),
-			WriteDelay = proplists:get_value('write_delay', Options, ?DEFAULT_WRITE_DELAY),
-			{ok, FD} = file:open(File, [write, append, {delayed_write, WriteBlockSize, WriteDelay}]),
-			FD
+			undefined
 	end,
-	ensure_fd_timer(),
-	NewState = dict:store(File, {IoDevice, erlang:system_time(milli_seconds)}, State),
-	{NewState, IoDevice}.
+	{IoDevice, FileSize}.
 
 ensure_fd_timer()->
 	case get(fd_check_timer) of 

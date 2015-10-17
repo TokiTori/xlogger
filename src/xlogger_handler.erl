@@ -2,15 +2,14 @@
 
 -behavior(gen_server).
 -export([start_link/2, init/1, handle_info/2, handle_call/3, handle_cast/2, code_change/3, terminate/2]).
+-define(DEFAULT_FILE_NAME, "%YYYY-%MM-%DD/%level.log").
 
--include("const.hrl").
 
 start_link(Id, Config)->
 	gen_server:start_link(?MODULE, [Id, Config], []).
 
 init([Id, Config])->
 	CompiledMsgPatterns = get_compiled_patterns(Config),
-	put(handler_id, Id),
 	{ok, dict:from_list([{config, Config}, {compiled_patterns, CompiledMsgPatterns}])}.
 
 handle_info(_, State)->
@@ -58,78 +57,11 @@ write(Config, Params, CompiledMsgPattern)->
 		{file, FileProp}->
 			FilenamePattern = proplists:get_value(name, FileProp, ?DEFAULT_FILE_NAME),
 			File = xlogger_formatter:format(xlogger_formatter:compile(FilenamePattern), Params),
-			filelib:ensure_dir(File),
-
-			case proplists:get_value(rotate, FileProp) of
-				RotateCount when is_integer(RotateCount)->
-					FileSizeLimit = proplists:get_value(size, FileProp, ?DEFAULT_FILE_SIZE_LIMIT),
-					CurrentFileLength = get_current_file_length(File),
-					if
-						CurrentFileLength >= FileSizeLimit->
-							rotate_files(File, RotateCount),
-							set_current_file_length(0);
-						true->
-							ok
-					end;
-				_->
-					ok
-			end,
 			Bin = unicode:characters_to_binary(MsgFormatted),
-			WriteDelay = proplists:get_value(write_delay, FileProp, ?DEFAULT_WRITE_DELAY),
-			xlogger_file_backend:write(File, Bin, WriteDelay),
+			xlogger_file_backend:write(File, Bin, FileProp),
 
-			increase_current_file_length(File, size(Bin)),
-			File
+			ok
 	end.
-
-rotate_files(File, RotateCount)->
-	RotatedFileBase = lists:concat([File, "."]),
-	FullSequence = lists:map(fun(X)->
-		lists:concat([RotatedFileBase, X])
-	end, lists:seq(1, RotateCount)),
-
-	RotateIndexSize = length(integer_to_list(RotateCount)),
-	WC = lists:concat([RotatedFileBase, lists:duplicate(RotateIndexSize, "?")]),
-	ExistedFiles = filelib:wildcard(WC),
-
-	TrueSequence = lists:takewhile(fun(X)->
-		lists:member(X, ExistedFiles)
-	end, FullSequence),
-
-	OrderedFiles = lists:reverse(lists:sort(TrueSequence)),
-	BaseSize = length(File),
-	lists:foreach(fun(X)->
-		Index = string:substr(X, BaseSize + 2, length(X) - BaseSize),
-		IndexInt = list_to_integer(Index),
-		if
-			IndexInt < RotateCount->
-				NewFilename = lists:concat([RotatedFileBase, IndexInt + 1]),
-				file:rename(X, NewFilename);
-			true->
-				file:delete(X)
-		end
-	end, OrderedFiles),
-	NewMainFilename = lists:concat([RotatedFileBase, "1"]),
-	file:rename(File, NewMainFilename).
-
-
-get_current_file_length(File)->
-	case get(current_file_length) of
-		undefined->
-			Size = filelib:file_size(File),
-			put(current_file_length, Size),
-			Size;
-		L->
-			L
-	end.
-
-set_current_file_length(Value)->
-	put(current_file_length, Value).
-
-
-increase_current_file_length(File, Count)->
-	put(current_file_length, get_current_file_length(File) + Count).
-
 
 get_compiled_patterns(Args)->
 	try
