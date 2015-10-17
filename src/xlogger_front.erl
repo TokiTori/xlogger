@@ -49,8 +49,12 @@ handle_cast({log, Params}, State)->
 						gen_server:cast(HandlerPid, {update_config, HandlerConfig}),
 						{HandlerPid, State};
 					true->
-						{ok, NewHandlerPid} = xlogger_handler_sup:add_handler(HandlerName, HandlerConfig),
-						{NewHandlerPid, dict:store(HandlerName, NewHandlerPid, State)}
+						case xlogger_handler_sup:add_handler(HandlerName, HandlerConfig) of
+							{ok, NewHandlerPid} ->
+								{NewHandlerPid, dict:store(HandlerName, NewHandlerPid, State)};
+							{error, {already_started, NewHandlerPid}}->
+								{NewHandlerPid, dict:store(HandlerName, NewHandlerPid, State)}
+						end
 				end;
 			_->
 				{ok, HandlerPid} = xlogger_handler_sup:add_handler(HandlerName, HandlerConfig),
