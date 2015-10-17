@@ -21,6 +21,8 @@ start_link() ->
 
 init([]) ->
 	Specs = [
+		
+		#{id => xlogger_configurator, start => {xlogger_configurator, start_link, []}},
 		#{id => xlogger_front, start => {xlogger_front, start_link, []}},
 		#{id => xlogger_handler_sup, start => {xlogger_handler_sup, start_link, []}},
 		#{id => xlogger_file_backend, start => {xlogger_file_backend, start_link, []}}
