@@ -19,6 +19,18 @@ handle_info(_, State)->
 handle_call(_, _, State)->
 	{reply, ok, State}.
 
+handle_cast({update_config, NewConfig}, State)->
+	OldConfig = dict:fetch(config, State),
+	NewState = if 
+		OldConfig == NewConfig ->
+			State;
+		true->
+			CompiledMsgPatterns = get_compiled_patterns(NewConfig),
+			dict:from_list([{config, NewConfig}, {compiled_patterns, CompiledMsgPatterns}])
+	end,
+	{noreply, NewState};
+	
+
 handle_cast({log, Params}, State)->
 	Config = dict:fetch(config, State),
 	CompiledMsgPatterns = dict:fetch(compiled_patterns, State),
