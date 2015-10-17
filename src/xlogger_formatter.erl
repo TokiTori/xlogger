@@ -2,11 +2,12 @@
 
 -export([compile/1, format/2]).
 -define(AVAILABLE_MSG_PARAMS, lists:reverse(lists:sort(["%YYYY", "%YY", "%MM", "%M", "%DD", "%D", "%H", "%HH", 
-	"%m","%mm", "%s", "%ss", "%level", "%msg", "%uptime", "%handler", "%user_module", "%module"]))).
+	"%m","%mm", "%s", "%ss", "%level", "%msg", "%uptime", "%unixtime", "%handler", "%user_module", "%module"]))).
 -define(DEFAULT_MSG_PATTERN, ["[", '%HH', ":", '%mm', ":", '%ss', "] ", '%uptime', " ", '%level', ": ", '%msg']).
 
 compile(Pattern) when is_list(Pattern)->
-	{struct, CompiledPattern} = f(Pattern),
+	Pattern1 = binary_to_list(unicode:characters_to_binary(Pattern, utf8)),
+	{struct, CompiledPattern} = f(Pattern1),
 	CompiledPattern;
 
 compile(_)->
@@ -16,7 +17,7 @@ format(WrongPattern, Params) when WrongPattern == undefined; WrongPattern == []-
 	format(?DEFAULT_MSG_PATTERN, Params);
 
 format(CompiledPattern, Params)->
-	{{Year, Month, Day}, {Hour, Minute, Second}} = proplists:get_value(time, Params),
+	DateTime = {{Year, Month, Day}, {Hour, Minute, Second}} = proplists:get_value(time, Params),
 	FormattedString = lists:concat(lists:map(fun(X)->
 		case X of
 			'%YYYY'->
@@ -43,6 +44,8 @@ format(CompiledPattern, Params)->
 				pad2(Second);
 			'%s'->
 				Second;
+			'%unixtime'->
+				calendar:datetime_to_gregorian_seconds(DateTime) - 62167219200;
 			'%uptime'->
 				{UptimeInMS, _} = erlang:statistics(wall_clock),
 				UptimeInMS;
@@ -89,8 +92,8 @@ f(P)->
 							Acc1 = case f(Token) of
 								{struct, ParsedPatternValue}->
 									lists:append(Acc, ParsedPatternValue);
-								ParsedPatternValue->
-									lists:append(Acc, [ParsedPatternValue])
+								PlainTextValue->
+									lists:append(Acc, [unicode:characters_to_list(list_to_binary(PlainTextValue))])
 							end,
 							lists:append(Acc1, [list_to_atom(X)])
 						end, [], Tokens),
