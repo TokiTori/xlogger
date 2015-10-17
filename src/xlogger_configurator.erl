@@ -18,7 +18,7 @@ handle_info(reload, _OldConfig)->
 		_OldConfig->
 			{noreply, _OldConfig};
 		NewConfig->
-			io:format("Configuration changed!~n"),
+			io:format("xlogger configuration changed!~n"),
 			{noreply, NewConfig}
 	end.
 
@@ -47,14 +47,15 @@ get_config_from_env()->
 		_->
 			undefined
 	end.
-	
 
 reload(Module)->
 	code:purge(Module),
-	Config = case code:load_file(Module) of 
+	code:load_file(Module),
+	Config = case code:ensure_loaded(Module) of 
 		{module, Module}->
 			apply_config(Module, ?CONFIG_FUNCTION);
 		{error, What}->
+			io:format("Can't load module: ~p~n",[What]),
 			undefined
 	end,
 	erlang:send_after(2000, self(), reload),
