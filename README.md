@@ -35,6 +35,7 @@ Configuration is a proplist. The root of this proplist has only property 'handle
 %s, %ss			Seconds and seconds with leading zero
 %level			Curent log level of message
 %msg			Just a message
+%unixtime       Current time in seconds since 1970-01-01
 %uptime			Uptime of virtual machine in ms
 %handler		Handler
 %user_module	This is a module, invoked current message and not in 'code:lib_dir()' directory
