@@ -41,3 +41,5 @@ Configuration is a proplist. The root of this proplist has only property 'handle
 %user_module	This is a module, invoked current message and not in 'code:lib_dir()' directory
 %module			This is a module, invoked current message
 ```
+
+All releases of xlogger tested by <a href="http://true-converter.com">true-converter.com</a> and <a href="http://http-master.com">http-master.com</a>
