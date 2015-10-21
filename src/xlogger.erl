@@ -1,6 +1,6 @@
 %% @author Mikhail Yashkov <mike25@ya.ru>
 %% @doc That is the interface to log messages via xlogger. 
-%% You can write strings or formatted messages with arguments to save your data to log files
+%% You can use strings or formatted messages with arguments to save your data to log files
 %% with specified log level and handler.
 
 -module(xlogger).
