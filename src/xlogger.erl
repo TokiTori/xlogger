@@ -2,7 +2,7 @@
 
 -export([
 		log/1, log/2, log/3, info/2, debug/2, warning/2, error/2, 
-		log_format/2, log_format/3, log_format/4, info_format/3, debug_format/3, warning_format/3, error_format/3
+		log/4, info/3, debug/3, warning/3, error/3
 	]).
 
 %% ===================================================================
@@ -43,27 +43,21 @@ error(Handler, Msg)->
 %% API for format message with arguments
 %% ===================================================================
 
-log_format(Format, Args)->
-	log_format(info, Format, Args).
-
-log_format(Level, Format, Args)->
-	log_format(default, Level, Format, Args).
-
-log_format(Handler, Level, Format, Args)->
+log(Handler, Level, Format, Args)->
 	FormattedMessage = lists:flatten(io_lib:format(Format, Args)),
 	log(Handler, Level, FormattedMessage).
 
-info_format(Handler, Format, Args)->
-	log_format(Handler, info, Format, Args).
+info(Handler, Format, Args)->
+	log(Handler, info, Format, Args).
 	
-debug_format(Handler, Format, Args)->
-	log_format(Handler, debug, Format, Args).
+debug(Handler, Format, Args)->
+	log(Handler, debug, Format, Args).
 	
-warning_format(Handler, Format, Args)->
-	log_format(Handler, warning, Format, Args).
+warning(Handler, Format, Args)->
+	log(Handler, warning, Format, Args).
 
-error_format(Handler, Format, Args)->
-	log_format(Handler, error, Format, Args).
+error(Handler, Format, Args)->
+	log(Handler, error, Format, Args).
 
 %% @doc Trying to determine module which executes xlogger
 get_module_name()->
@@ -95,7 +89,7 @@ get_module_name()->
 get_module_name([], _)->
 	undefined_module;
 
-get_module_name([Head | Tail] = Stacktrace, ExcludedModules)->
+get_module_name([Head | Tail], ExcludedModules)->
 	ModuleName = erlang:element(1, Head),
 	case lists:member(ModuleName, ExcludedModules) of
 		true->
