@@ -22,7 +22,7 @@ xlogger:debug(HandlerName, Message)
 xlogger:warning(HandlerName, Message)
 xlogger:error(HandlerName, Message)
 
-xlogger:log_format(HandlerName, Level, Format, Args)
+xlogger:log(HandlerName, Level, Format, Args)
 xlogger:info(HandlerName, Format, Args)
 xlogger:debug(HandlerName, Format, Args)
 xlogger:warning(HandlerName, Format, Args)
