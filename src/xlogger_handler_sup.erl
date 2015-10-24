@@ -1,4 +1,5 @@
 -module(xlogger_handler_sup).
+-author("Mikhail Yashkov <mike25@ya.ru>").
 
 -behaviour(supervisor).
 -export([start_link/0, init/1, add_handler/2]).

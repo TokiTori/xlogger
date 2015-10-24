@@ -1,4 +1,5 @@
 -module(xlogger_sup).
+-author("Mikhail Yashkov <mike25@ya.ru>").
 
 -behaviour(supervisor).
 

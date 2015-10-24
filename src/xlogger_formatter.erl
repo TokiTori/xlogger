@@ -1,4 +1,5 @@
 -module(xlogger_formatter).
+-author("Mikhail Yashkov <mike25@ya.ru>").
 
 -export([compile/1, format/2]).
 -define(AVAILABLE_MSG_PARAMS, lists:reverse(lists:sort(["%YYYY", "%YY", "%MM", "%M", "%DD", "%D", "%H", "%HH", 

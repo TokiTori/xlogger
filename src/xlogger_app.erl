@@ -1,4 +1,5 @@
 -module(xlogger_app).
+-author("Mikhail Yashkov <mike25@ya.ru>").
 
 -behaviour(application).
 

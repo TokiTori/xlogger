@@ -1,4 +1,6 @@
 -module(xlogger_configurator).
+-author("Mikhail Yashkov <mike25@ya.ru>").
+
 -behavior(gen_server).
 -export([start_link/0, init/1, handle_info/2, handle_call/3, handle_cast/2, code_change/3, terminate/2]).
 -export([get_config/0]).
