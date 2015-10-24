@@ -1,5 +1,16 @@
 # xlogger 
-xlogger is an erlang logging application with features such as files rotation with size limit, filename formatting, message formatting. This logger has pre-defined log levels: info, debug, warning, error. You can specify your own log level.
+xlogger is an Erlang logging application with features:
+
+1. Time-based and size-based log files rotation
+2. Name of file/directory and message can be formatted using date, time, log level, handler name, current module name...
+3. Pre-defined log levels: info, debug, warning, error. You can specify your own log level
+4. Many handlers that can contain many destinations (console, files...)
+
+# Starting
+1. Make shure that you have a configuration in module <code>xlogger_config.erl</code> or in application configuration file
+2. Run xlogger as <code>application:start(xlogger)</code>
+3. Integrate functions of <code>xlogger.erl</code> module into your modules
+
 # Usage
 
 ```
@@ -11,13 +22,11 @@ xlogger:debug(HandlerName, Message)
 xlogger:warning(HandlerName, Message)
 xlogger:error(HandlerName, Message)
 
-xlogger:log_format(Format, Args)
-xlogger:log_format(Level, Format, Args)
-xlogger:log_format(HandlerName, Level, Format, Args)
-xlogger:info_format(HandlerName, Format, Args)
-xlogger:debug_format(HandlerName, Format, Args)
-xlogger:warning_format(HandlerName, Format, Args)
-xlogger:error_format(HandlerName, Format, Args)
+xlogger:log(HandlerName, Level, Format, Args)
+xlogger:info(HandlerName, Format, Args)
+xlogger:debug(HandlerName, Format, Args)
+xlogger:warning(HandlerName, Format, Args)
+xlogger:error(HandlerName, Format, Args)
 ```
 First function with one parameter uses default handler and info level.
 Second function with two parameters uses default handler.
