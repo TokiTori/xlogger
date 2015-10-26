@@ -5,6 +5,7 @@ xlogger is an Erlang logging application with features:
 2. Name of file/directory and message can be formatted using date, time, log level, handler name, current module name...
 3. Pre-defined log levels: info, debug, warning, error. You can specify your own log level
 4. Many handlers that can contain many destinations (console, files...)
+5. Helpful functions: filters (coming soon)
 
 # Starting
 1. Make shure that you have a configuration in module <code>xlogger_config.erl</code> or in application configuration file
