@@ -1,0 +1,5 @@
+%% encoding: UTF-8
+{application,xlogger}.
+{modules,[xlogger,xlogger_app,xlogger_configurator,xlogger_file_backend,
+          xlogger_formatter,xlogger_front,xlogger_handler,xlogger_handler_sup,
+          xlogger_sup]}.
