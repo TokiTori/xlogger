@@ -102,7 +102,6 @@ rotate_files(Filename, RotateCount) when RotateCount<1->
 rotate_files(Filename, RotateCount)->
 	RotatedFileBase = lists:concat([Filename, "."]),
 	ExistedFiles = filelib:wildcard(lists:concat([RotatedFileBase, "*"])),
-	FullSequence = [lists:concat([RotatedFileBase, X]) || X <- lists:seq(1, RotateCount)],
 
 	ExistedContinuousIndexesSequence = lists:takewhile(fun(X)->
 		SeqFilename = lists:concat([RotatedFileBase, X]),
