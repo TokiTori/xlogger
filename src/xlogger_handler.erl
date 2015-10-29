@@ -1,14 +1,14 @@
 -module(xlogger_handler).
 
 -behavior(gen_server).
--export([start_link/2, init/1, handle_info/2, handle_call/3, handle_cast/2, code_change/3, terminate/2]).
+-export([start_link/1, init/1, handle_info/2, handle_call/3, handle_cast/2, code_change/3, terminate/2]).
 -define(DEFAULT_FILE_NAME, "%YYYY-%MM-%DD/%level.log").
 
 
-start_link(Id, Config)->
-	gen_server:start_link(?MODULE, [Id, Config], []).
+start_link(Config)->
+	gen_server:start_link(?MODULE, [Config], []).
 
-init([Id, Config])->
+init([Config])->
 	CompiledMsgPatterns = get_compiled_patterns(Config),
 	{ok, dict:from_list([{config, Config}, {compiled_patterns, CompiledMsgPatterns}])}.
 

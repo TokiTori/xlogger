@@ -11,7 +11,7 @@ start_link() ->
 	supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 add_handler(HandlerName, Config)->
-	ChildSpec = #{id => HandlerName, start => {xlogger_handler, start_link, [HandlerName, Config]}},
+	ChildSpec = #{id => HandlerName, start => {xlogger_handler, start_link, [Config]}},
 	supervisor:start_child(?MODULE, ChildSpec).
 
 %% ===================================================================
