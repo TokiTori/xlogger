@@ -6,13 +6,24 @@
 -module(xlogger).
 -author("Mikhail Yashkov <mike25@ya.ru>").
 
+-behavior(gen_server).
+-export([start_link/0, init/1, handle_info/2, handle_call/3, handle_cast/2, code_change/3, terminate/2]).
 -export([
 		log/1, log/2, log/3, info/2, debug/2, warning/2, error/2, 
 		log/4, info/3, debug/3, warning/3, error/3
 	]).
 
+
 %% ===================================================================
-%% API for prepared messages
+%% External API
+%% ===================================================================
+
+start_link()->
+	gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+
+
+%% ===================================================================
+%% External API for prepared messages
 %% ===================================================================
 
 %% @doc Send message to default handler with 'info' log level
@@ -29,7 +40,7 @@ log(Level, Msg)->
 %% @spec log(HandlerName::atom(), Level::atom(), Msg::string()) -> ok
 log(HandlerName, Level, Msg)->
 	{UserModule, ExecutedModule} = get_module_name(),
-	xlogger_front:dispatch([
+	Params = [
 		{handler, HandlerName}, 
 		{level, Level}, 
 		{msg, Msg}, 
@@ -37,7 +48,8 @@ log(HandlerName, Level, Msg)->
 		{user_module, UserModule},
 		{module, ExecutedModule},
 		{time, calendar:local_time()}
-	]).
+	],
+	gen_server:cast(?MODULE, {log, Params}).
 
 %% @doc Send info message
 %% @spec info(HandlerName::atom(), Msg::string()) -> ok
@@ -60,7 +72,7 @@ error(HandlerName, Msg)->
 	log(HandlerName, error, Msg).
 
 %% ===================================================================
-%% API for format message with arguments
+%% External API for format message with arguments
 %% ===================================================================
 
 %% @doc Send formatted message with arguments
@@ -127,3 +139,30 @@ get_module_name([Head | Tail], ExcludedModules)->
 		_->
 			ModuleName
 	end.
+
+
+%% ===================================================================
+%% Gen Server callbacks
+%% ===================================================================
+
+init([])->
+	{ok, dict:new()}.
+
+handle_info(_, _State)->
+	{noreply, _State}.
+
+handle_call(_, _, _State)->
+	{reply, ok, _State}.
+
+handle_cast({log, Params}, State)->
+	xlogger_handler_sup:dispatch(Params),
+	{noreply, State};
+
+handle_cast(_, _State)->
+	{noreply, _State}.
+
+code_change(_OldVsn, _State, _Extra)->
+	{ok, _State}.
+
+terminate(_Reason, _State)->
+	ok.
