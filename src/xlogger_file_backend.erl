@@ -1,4 +1,5 @@
 -module(xlogger_file_backend).
+-author("Mikhail Yashkov <mike25@ya.ru>").
 
 -behavior(gen_server).
 -export([start_link/0, init/1, handle_info/2, handle_call/3, handle_cast/2, code_change/3, terminate/2]).
@@ -10,42 +11,20 @@
 -define(DEFAULT_WRITE_DELAY, 500).
 
 
+%% ===================================================================
+%% External API
+%% ===================================================================
+
 start_link()->
 	gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-init([])->
-	{ok, dict:new()}.
+
+%% ===================================================================
+%% Internal API
+%% ===================================================================
 
 write(Filename, Data, FileOptions) when is_binary(Data), is_list(FileOptions)->
 	gen_server:cast(?MODULE, {write, Filename, Data, FileOptions}).
-
-handle_info(fd_check, State)->
-	CurrentTime = erlang:system_time(milli_seconds),
-	NotExpiredFD = dict:filter(fun(_Key, Value)->
-		{IoDevice, LastActiveTime, _} = Value,
-		if
-			LastActiveTime + ?FD_TIMEOUT < CurrentTime ->
-				file:datasync(IoDevice),
-				file:close(IoDevice),
-				false;
-			true->
-				true
-		end
-	end, State),
-	case dict:size(NotExpiredFD) of
-		0->
-			ok;
-		_->
-			ensure_fd_timer()
-	end,
-	{noreply, NotExpiredFD}.
-
-handle_call(_, _, State)->
-	{reply, ok, State}.
-
-handle_cast({write, Filename, Data, FileOptions}, State)->
-	NewState = write_data(Filename, Data, FileOptions, State),
-	{noreply, NewState}.
 
 write_data(Filename, Data, FileOptions, State)->
 	case get_fd(Filename, FileOptions, State) of
@@ -151,6 +130,42 @@ ensure_fd_timer()->
 create_fd_check_timer()->
 	TimerRef = erlang:send_after(?FD_EXPIRATION_CHECK_TIMEOUT, self(), fd_check),
 	put(fd_check_timer, TimerRef).
+
+
+%% ===================================================================
+%% Gen Server callbacks
+%% ===================================================================
+
+init([])->
+	{ok, dict:new()}.
+
+handle_info(fd_check, State)->
+	CurrentTime = erlang:system_time(milli_seconds),
+	NotExpiredFD = dict:filter(fun(_Key, Value)->
+		{IoDevice, LastActiveTime, _} = Value,
+		if
+			LastActiveTime + ?FD_TIMEOUT < CurrentTime ->
+				file:datasync(IoDevice),
+				file:close(IoDevice),
+				false;
+			true->
+				true
+		end
+	end, State),
+	case dict:size(NotExpiredFD) of
+		0->
+			ok;
+		_->
+			ensure_fd_timer()
+	end,
+	{noreply, NotExpiredFD}.
+
+handle_call(_, _, State)->
+	{reply, ok, State}.
+
+handle_cast({write, Filename, Data, FileOptions}, State)->
+	NewState = write_data(Filename, Data, FileOptions, State),
+	{noreply, NewState}.
 
 code_change(_OldVsn, _State, _Extra)->
 	{ok, _State}.
