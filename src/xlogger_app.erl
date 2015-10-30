@@ -2,8 +2,6 @@
 -author("Mikhail Yashkov <mike25@ya.ru>").
 
 -behaviour(application).
-
-%% Application callbacks
 -export([start/2, stop/1]).
 
 %% ===================================================================

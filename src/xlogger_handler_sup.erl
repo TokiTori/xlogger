@@ -13,8 +13,9 @@
 		{msg_pattern, "[%HH:%mm:%ss] %uptime: %msg"}
 	]).
 
+
 %% ===================================================================
-%% API
+%% External API
 %% ===================================================================
 
 start_link() ->
@@ -29,8 +30,9 @@ apply_configuration(Configuration)->
 	Handlers = proplists:get_value(handlers, Configuration),
 	update_handlers(Handlers).
 
+
 %% ===================================================================
-%% Internal functions
+%% Internal API
 %% ===================================================================
 
 update_handlers([])->
@@ -69,7 +71,8 @@ add_handler(HandlerName, Config)->
 ensure_default_handler(Children)->
 	case lists:keyfind(default, 1, Children) of
 		false->
-			add_handler(default, ?DEFAULT_HANDLER_CONFIG);
+			{ok, Pid} = add_handler(default, ?DEFAULT_HANDLER_CONFIG),
+			Pid;
 		ChildTuple->
 			element(2, ChildTuple)
 	end.

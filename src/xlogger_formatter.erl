@@ -6,6 +6,11 @@
 	"%m","%mm", "%s", "%ss", "%level", "%msg", "%uptime", "%unixtime", "%handler", "%user_module", "%module"]))).
 -define(DEFAULT_MSG_PATTERN, ["[", '%HH', ":", '%mm', ":", '%ss', "] ", '%uptime', " ", '%level', ": ", '%msg']).
 
+
+%% ===================================================================
+%% External API
+%% ===================================================================
+
 compile(Pattern) when is_list(Pattern)->
 	Pattern1 = binary_to_list(unicode:characters_to_binary(Pattern, utf8)),
 	{struct, CompiledPattern} = f(Pattern1),
@@ -71,6 +76,11 @@ format(CompiledPattern, Params)->
 		end
 	end, CompiledPattern)),
 	FormattedString.
+
+
+%% ===================================================================
+%% Internal API
+%% ===================================================================
 
 f(P)->
 	Res = lists:foldl(fun(X, SourcePattern)->

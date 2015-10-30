@@ -3,46 +3,21 @@
 
 -behavior(gen_server).
 -export([start_link/0, init/1, handle_info/2, handle_call/3, handle_cast/2, code_change/3, terminate/2]).
--export([get_config/0]).
 -define(CONFIG_MODULE, xlogger_config).
 -define(CONFIG_FUNCTION, get_config).
 
 
+%% ===================================================================
+%% External API
+%% ===================================================================
+
 start_link()->
 	gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-init([])->
-	Config = reload(?CONFIG_MODULE),
-	xlogger_handler_sup:apply_configuration(Config),
-	{ok, Config}.
 
-handle_info(reload, _OldConfig)->
-	case reload(?CONFIG_MODULE) of 
-		_OldConfig->
-			{noreply, _OldConfig};
-		NewConfig->
-			io:format("xlogger configuration changed!~n"),
-			xlogger_handler_sup:apply_configuration(NewConfig),
-			{noreply, NewConfig}
-	end.
-
-handle_call(get_config, _From, _State)->
-	{reply, _State, _State};
-
-handle_call(_, _From, _State)->
-	{reply, ok, _State}.
-
-handle_cast(_, _State)->
-	{noreply, _State}.
-
-
-get_config()->
-	case gen_server:call(?MODULE, get_config) of
-		Cfg when is_list(Cfg), length(Cfg)>0->
-			Cfg;
-		undefined->
-			get_config_from_env()
-	end.
+%% ===================================================================
+%% Internal API
+%% ===================================================================
 
 get_config_from_env()->
 	case application:get_all_env(xlogger) of 
@@ -60,7 +35,7 @@ reload(Module)->
 		{module, Module}->
 			get_config(Module, ?CONFIG_FUNCTION);
 		{error, What}->
-			io:format("Can't load module: ~p~n",[What]),
+			xlogger:log(error, "can't load module ~p",[What]),
 			undefined
 	end,
 	erlang:send_after(2000, self(), reload),
@@ -77,12 +52,12 @@ get_config(Module, Function)->
 						undefined
 				end;
 			false->
-				io:format("Function ~p/0 has not exported in module ~p~n",[Function, Module]),
+				xlogger:log(error, "function ~p/0 has not exported in module ~p",[Function, Module]),
 				undefined
 		end
 	catch
 		Type:What->
-			io:format("Can't get config ~p:~p~n\t~p~n",[Type, What, erlang:get_stacktrace()]),
+			xlogger:log(error, "can't get config. ~p:~p~n\t~p",[Type, What, erlang:get_stacktrace()]),
 			undefined
 	end.
 
@@ -130,9 +105,38 @@ replace(Key, Value, Props, IgnoreValue)->
 			lists:flatten([PropsWithoutKey, {Key, Value}])
 	end.
 
+
+%% ===================================================================
+%% Gen Server callbacks
+%% ===================================================================
+
+init([])->
+	Config = reload(?CONFIG_MODULE),
+	xlogger_handler_sup:apply_configuration(Config),
+	{ok, Config}.
+
+handle_info(reload, _OldConfig)->
+	case reload(?CONFIG_MODULE) of
+		_OldConfig->
+			{noreply, _OldConfig};
+		NewConfig->
+			xlogger:log(info, "xlogger configuration changed"),
+			xlogger_handler_sup:apply_configuration(NewConfig),
+			{noreply, NewConfig}
+	end.
+
+handle_call(get_config, _From, _State)->
+	{reply, _State, _State};
+
+handle_call(_, _From, _State)->
+	{reply, ok, _State}.
+
+handle_cast(_, _State)->
+	{noreply, _State}.
+
 code_change(_OldVsn, _State, _Extra)->
 	{ok, _State}.
 
-terminate(_Reason, _State)->
-	io:format("Terminated with reason: ~p~n",[_Reason]),
+terminate(Reason, _State)->
+	xlogger:log(error, "~p terminated with reason: ~p",[?MODULE, Reason]),
 	ok.
