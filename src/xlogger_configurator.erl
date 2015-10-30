@@ -13,6 +13,7 @@ start_link()->
 
 init([])->
 	Config = reload(?CONFIG_MODULE),
+	xlogger_handler_sup:apply_configuration(Config),
 	{ok, Config}.
 
 handle_info(reload, _OldConfig)->
@@ -21,6 +22,7 @@ handle_info(reload, _OldConfig)->
 			{noreply, _OldConfig};
 		NewConfig->
 			io:format("xlogger configuration changed!~n"),
+			xlogger_handler_sup:apply_configuration(NewConfig),
 			{noreply, NewConfig}
 	end.
 

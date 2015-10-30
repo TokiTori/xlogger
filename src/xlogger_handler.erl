@@ -10,6 +10,7 @@ start_link(Config)->
 	gen_server:start_link(?MODULE, [Config], []).
 
 init([Config])->
+	process_flag(trap_exit, true),
 	CompiledMsgPatterns = get_compiled_patterns(Config),
 	{ok, dict:from_list([{config, Config}, {compiled_patterns, CompiledMsgPatterns}])}.
 
@@ -20,30 +21,57 @@ handle_call(_, _, State)->
 	{reply, ok, State}.
 
 handle_cast({update_config, NewConfig}, State)->
-	OldConfig = dict:fetch(config, State),
-	NewState = if 
-		OldConfig == NewConfig ->
-			State;
-		true->
-			CompiledMsgPatterns = get_compiled_patterns(NewConfig),
-			dict:from_list([{config, NewConfig}, {compiled_patterns, CompiledMsgPatterns}])
+	NewState = try
+		OldConfig = dict:fetch(config, State),
+		if
+			OldConfig == NewConfig ->
+				State;
+			true->
+				CompiledMsgPatterns = get_compiled_patterns(NewConfig),
+				dict:from_list([{config, NewConfig}, {compiled_patterns, CompiledMsgPatterns}])
+		end
+	catch
+		Type:What->
+			io:format("~p:~p~n\t~p",[Type, What, erlang:get_stacktrace()])
 	end,
 	{noreply, NewState};
 	
 
 handle_cast({log, Params}, State)->
-	Config = dict:fetch(config, State),
-	CompiledMsgPatterns = dict:fetch(compiled_patterns, State),
-	lists:foreach(fun(X)->
-		case X of 
-			{Dest, _}->
-				CompiledMsgPattern = proplists:get_value(Dest, CompiledMsgPatterns),
-				write(X, Params, CompiledMsgPattern);
-			_->
-				ok
-		end
-	end, proplists:get_value(dest, Config)),
+	try
+		Config = dict:fetch(config, State),
+		CompiledMsgPatterns = dict:fetch(compiled_patterns, State),
+		lists:foreach(fun(X)->
+			case X of
+				{Dest, DestProps}->
+					case check_filters(Params, proplists:get_value(filters, DestProps)) of 
+						true->
+							CompiledMsgPattern = proplists:get_value(Dest, CompiledMsgPatterns),
+							write(X, Params, CompiledMsgPattern);
+						_->
+							io:format("ignore msg ~n"),
+							ok
+					end;
+				_->
+					ok
+			end
+		end, proplists:get_value(dest, Config))
+	catch
+		Type:What->
+			io:format("~p:~p~n\t~p",[Type, What, erlang:get_stacktrace()])
+	end,
 	{noreply, State}.
+
+check_filters(Params, [FilterFunction | RestFilters] = Filters) when is_list(Filters), length(Filters)>0->
+	case FilterFunction(Params) of
+		true->
+			check_filters(Params, RestFilters);
+		_->
+			false
+	end;
+
+check_filters(_, _)->
+	true.
 
 write(Config, Params, CompiledMsgPattern)->
 
@@ -68,17 +96,10 @@ get_compiled_patterns(Args)->
 	try
 		case proplists:get_value(dest, Args) of
 			Dest when is_list(Dest), length(Dest)>0 ->
-				CommonMsgPattern = proplists:get_value(msg_pattern, Args),
 				lists:map(fun(Handler)->
 					case Handler of
 						{H, HParams}->
-							P = case proplists:get_value(msg_pattern, HParams) of
-								undefined->
-									xlogger_formatter:compile(CommonMsgPattern);
-								MsgPattern->
-									xlogger_formatter:compile(MsgPattern)
-							end,
-							{H, P};
+							{H, xlogger_formatter:compile(proplists:get_value(msg_pattern, HParams))};
 						_->
 							[]
 					end
