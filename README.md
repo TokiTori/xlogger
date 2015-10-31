@@ -29,7 +29,7 @@ xlogger:debug(HandlerName, Format, Args)
 xlogger:warning(HandlerName, Format, Args)
 xlogger:error(HandlerName, Format, Args)
 ```
-First function with one parameter uses default handler and info level.
+First function with one parameter uses default handler and info level. This function used by internal modules of xlogger. Thus you can see xlogger's messages in dests of default handler.
 Second function with two parameters uses default handler.
 In other functions HandlerName is a name of handler from configuration. If the handler with this name not found will be used default handler with default configuration. Also default configuraion will be used by using function <code>xlogger:log/2</code>.
 Functions has two variants: prepared Message or Format string with Arguments.
