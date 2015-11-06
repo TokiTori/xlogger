@@ -35,7 +35,7 @@ reload(Module)->
 		{module, Module}->
 			get_config(Module, ?CONFIG_FUNCTION);
 		{error, What}->
-			xlogger:log(error, "can't load module ~p",[What]),
+			xlogger:error(default, "can't load module ~p", [What]),
 			undefined
 	end,
 	erlang:send_after(2000, self(), reload),
@@ -52,23 +52,32 @@ get_config(Module, Function)->
 						undefined
 				end;
 			false->
-				xlogger:log(error, "function ~p/0 has not exported in module ~p",[Function, Module]),
+				xlogger:error(default, "function ~p/0 has not exported in module ~p",[Function, Module]),
 				undefined
 		end
 	catch
+		{function_not_exported, M, F}->
+			xlogger:error(default, "Filter function ~p:~p is not exported", [M, F]);
+		{module_or_function_bad_name, M, F}->
+			xlogger:error(default, "Module name or Function name of filter is not atom ~p:~p", [M, F]);
+		handlers_not_found->
+			xlogger:error(default, "Handlers not found");
+		handler_destinations_not_found->
+			xlogger:error(default, "Handler's destinations not found");
 		Type:What->
-			xlogger:log(error, "can't get config. ~p:~p~n\t~p",[Type, What, erlang:get_stacktrace()]),
+			xlogger:error(default, "can't get config. ~p: ~p~n\t~p",[Type, What, erlang:get_stacktrace()]),
 			undefined
 	end.
 
 validate_config(Config)->
 	ValidatedHandlers = case proplists:get_value(handlers, Config) of
 		Handlers when is_list(Handlers)->
+			HandlersWithoutDefault = proplists:delete(default, Handlers),
 			lists:map(fun(Handler)->
 				validate_handler(Handler)
-			end, Handlers);
+			end, HandlersWithoutDefault);
 		_->
-			error("Handlers not found")
+			throw(handlers_not_found)
 	end,
 	lists:flatten([proplists:delete(handlers, Config), {handlers, ValidatedHandlers}]).
 
@@ -79,7 +88,7 @@ validate_handler({HandlerName, HandlerProps})->
 				validate_dest(Dest, HandlerProps)
 			end, Dests);
 		_->
-			error("Handler's destinations not found")
+			throw(handler_destinations_not_found)
 	end,
 	{HandlerName, lists:flatten([proplists:delete(dest, HandlerProps), {dest, NewDests}])}.
 
@@ -90,11 +99,29 @@ validate_dest({DestName, Props}, Handler)->
 
 	%% merging handler's filters and dest's filters
 	Filters = lists:flatten([proplists:get_value(filters, Props, []) | proplists:get_value(filters, Handler, [])]),
+	validate_filters(Filters),
 	PropsWithFilters = replace(filters, Filters, PropsWithMsgPattern, []),
 	{DestName, PropsWithFilters};
 
 validate_dest(_,_)->
 	[].
+
+validate_filters(Filters)->
+	lists:foreach(fun({Module, Function} = X)->
+		case is_atom(Module) andalso is_atom(Function) of
+			true->
+				ExportedFunctions = Module:module_info(exports),
+				case lists:keyfind(Function, 1, ExportedFunctions) of 
+					{Function, 1}->
+						true;
+					_->
+						throw({function_not_exported, Module, Function})
+				end;
+			_->
+				throw({module_or_function_bad_name, Module, Function})
+		end
+	end, Filters).
+
 
 replace(Key, Value, Props, IgnoreValue)->
 	PropsWithoutKey = proplists:delete(Key, Props),
@@ -120,7 +147,7 @@ handle_info(reload, _OldConfig)->
 		_OldConfig->
 			{noreply, _OldConfig};
 		NewConfig->
-			xlogger:log(info, "xlogger configuration changed"),
+			xlogger:info(default, "xlogger configuration changed"),
 			xlogger_handler_sup:apply_configuration(NewConfig),
 			{noreply, NewConfig}
 	end.
@@ -138,5 +165,5 @@ code_change(_OldVsn, _State, _Extra)->
 	{ok, _State}.
 
 terminate(Reason, _State)->
-	xlogger:log(error, "~p terminated with reason: ~p",[?MODULE, Reason]),
+	xlogger:error(default, "~p terminated with reason: ~p",[?MODULE, Reason]),
 	ok.
