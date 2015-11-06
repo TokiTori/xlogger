@@ -34,16 +34,17 @@ check_filters(_, _)->
 write(Config, Params, CompiledMsgPattern)->
 	M1 = xlogger_formatter:format(CompiledMsgPattern, Params),
 	Msg = unicode:characters_to_list(M1),
-	MsgFormatted = io_lib:format("~ts~n",[Msg]),
 	case Config of
 		undefined->
 			ok;
-		{console, _ConsoleProp}->
-			io:format(MsgFormatted);
+		{console, ConsoleProp}->
+			TruncatedMsg = truncate_msg(Msg, ConsoleProp),
+			io:format(io_lib:format("~ts~n",[TruncatedMsg]));
 		{file, FileProp}->
 			FilenamePattern = proplists:get_value(name, FileProp, ?DEFAULT_FILE_NAME),
 			File = xlogger_formatter:format(xlogger_formatter:compile(FilenamePattern), Params),
-			Bin = unicode:characters_to_binary(MsgFormatted),
+			TruncatedMsg = truncate_msg(Msg, FileProp),
+			Bin = unicode:characters_to_binary(io_lib:format("~ts~n",[TruncatedMsg])),
 			xlogger_file_backend:write(File, Bin, FileProp),
 			ok
 	end.
@@ -67,6 +68,14 @@ get_compiled_patterns(Args)->
 		Type:What->
 			io:format("Error: ~p, ~p, ~p~n",[Type, What, erlang:get_stacktrace()]),
 			[]
+	end.
+
+truncate_msg(Msg, Props)->
+	case proplists:get_value(msg_size_limit, Props) of
+		Limit when is_integer(Limit), Limit>0->
+			string:substr(Msg, 1, Limit);
+		_->
+			Msg
 	end.
 
 
