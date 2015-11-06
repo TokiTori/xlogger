@@ -18,10 +18,12 @@ start_link(Config)->
 %% Internal API
 %% ===================================================================
 
-check_filters(Params, [FilterFunction | RestFilters] = Filters) when is_list(Filters), length(Filters)>0->
-	case FilterFunction(Params) of
+check_filters(Params, [{Module, Function} | RestFilters] = Filters) when is_list(Filters), length(Filters)>0->
+	case catch erlang:apply(Module, Function, [Params]) of
 		true->
 			check_filters(Params, RestFilters);
+		{'EXIT', ErrorMsg}->
+			xlogger:error(default, "Can't check filter ~p:~p~n\tError: ~p", [Module, Function, ErrorMsg]);
 		_->
 			false
 	end;
@@ -43,7 +45,6 @@ write(Config, Params, CompiledMsgPattern)->
 			File = xlogger_formatter:format(xlogger_formatter:compile(FilenamePattern), Params),
 			Bin = unicode:characters_to_binary(MsgFormatted),
 			xlogger_file_backend:write(File, Bin, FileProp),
-
 			ok
 	end.
 
@@ -113,7 +114,6 @@ handle_cast({log, Params}, State)->
 							CompiledMsgPattern = proplists:get_value(Dest, CompiledMsgPatterns),
 							write(X, Params, CompiledMsgPattern);
 						_->
-							io:format("ignore msg ~n"),
 							ok
 					end;
 				_->
@@ -124,6 +124,9 @@ handle_cast({log, Params}, State)->
 		Type:What->
 			io:format("~p:~p~n\t~p",[Type, What, erlang:get_stacktrace()])
 	end,
+	{noreply, State};
+
+handle_cast(C, State)->
 	{noreply, State}.
 
 code_change(_OldVsn, _State, _Extra)->
