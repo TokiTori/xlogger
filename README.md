@@ -4,8 +4,10 @@ xlogger is an Erlang logging application with features:
 1. Time-based and size-based log files rotation
 2. Name of file/directory and message can be formatted using date, time, log level, handler name, current module name...
 3. Pre-defined log levels: info, debug, warning, error. You can specify your own log level
-4. Many handlers that can contain many destinations (console, files...)
-5. Helpful functions: filters, message size limitation
+4. Many handlers that can have many destinations (console, files...)
+5. Configuration changing on-the-fly
+6. Helpful functions: filters, message size limitation
+
 
 # Starting
 1. Make shure that you have a configuration in module <code>xlogger_config.erl</code> or in application configuration file
@@ -35,7 +37,7 @@ In other functions HandlerName is a name of handler from configuration. If the h
 Functions has two variants: prepared Message or Format string with Arguments.
 
 # Configuration
-Configuration is a proplist. The root of this proplist has only property 'handlers', which defines handlers for logger. Handler can contain 'dest' - destinations of log and 'msg_pattern' - common message pattern for all destinations in current handler. Destinations can be two types (at this moment): 'console', 'file'. Console type has no properties yet. File type has properties 'name', 'size', 'rotate', 'msg_pattern', 'write_delay'. Properties 'name' and 'msg_pattern' can be formatted by next params:
+Configuration is a proplist. The root of this proplist has only property 'handlers', which defines handlers for logger. Handler can contain 'dest' - destinations of log and 'msg_pattern' - common message pattern for all destinations in current handler. Destinations can be two types (at this moment): 'console', 'file'. Console type has properties 'msg_pattern', 'msg_size_limit'. File type has properties 'name', 'size', 'rotate', 'msg_pattern', 'msg_size_limit', 'write_delay'. Properties 'name' and 'msg_pattern' can be formatted by next params:
 ```
 %YYYY, %YY		Year in four-digit format and two-digit format
 %M, %MM			Months and months with leading zero
