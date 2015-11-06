@@ -8,7 +8,7 @@
 	[
 		{dest, [
 			{console, []},
-			{file, [{name, "logs/default.%level.log"}, {rotate, 6}, {size, 5242880}]}
+			{file, [{name, "logs/xlogger.%level.log"}, {rotate, 6}, {size, 5242880}]}
 		]},
 		{msg_pattern, "[%HH:%mm:%ss] %uptime: %msg"}
 	]).
@@ -24,36 +24,37 @@ start_link() ->
 dispatch(Params)->
 	HandlerName = proplists:get_value(handler, Params),
 	Handler = get_handler(HandlerName),
-	gen_server:cast(Handler, {log, Params}).
+	gen_server:cast(Handler, {log, Params}),
+	ok.
 
 apply_configuration(Configuration)->
-	Handlers = proplists:get_value(handlers, Configuration),
-	update_handlers(Handlers).
+	try
+		Handlers = proplists:get_value(handlers, Configuration),
+		Children = supervisor:which_children(?MODULE),
+		update_handlers(Handlers, Children)
+	catch
+		What:Why->
+			io:format("Can't update configuration. ~p:~p~n\t~p~n",[What, Why, erlang:get_stacktrace()])
+	end.
 
 
 %% ===================================================================
 %% Internal API
 %% ===================================================================
 
-update_handlers([])->
-	ok;
-update_handlers([Handler | Rest])->
-	try
-		{HandlerName, HandlerConfig} = Handler,
-		Children = supervisor:which_children(?MODULE),
-		case lists:keyfind(HandlerName, 1, Children) of
-			false->
-				add_handler(HandlerName, HandlerConfig);
-			ChildTuple->
-				HandlerPid = element(2, ChildTuple),
-				gen_server:cast(HandlerPid, {update_config, HandlerConfig}),
-				ok
-		end
-	catch
-		Type:What->
-			io:format("~p:~p~n\t~p~n",[Type,What, erlang:get_stacktrace()])
+update_handlers([Handler | Rest], Children)->
+	{HandlerName, HandlerConfig} = Handler,
+	case lists:keysearch(HandlerName, 1, Children) of
+		{value, ChildTuple}->
+			HandlerPid = element(2, ChildTuple),
+			gen_server:cast(HandlerPid, {update_config, HandlerConfig});
+		_->
+			add_handler(HandlerName, HandlerConfig)
 	end,
-	update_handlers(Rest).
+	update_handlers(Rest, Children);
+
+update_handlers(R, _)->
+	ok.
 
 get_handler(HandlerName)->
 	Children = supervisor:which_children(?MODULE),
