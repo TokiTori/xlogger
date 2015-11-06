@@ -97,10 +97,15 @@ validate_dest({DestName, Props}, Handler)->
 	MsgPattern = proplists:get_value(msg_pattern, Props, proplists:get_value(msg_pattern, Handler)),
 	PropsWithMsgPattern = replace(msg_pattern, MsgPattern, Props, undefined),
 
+	%% using handler's msg_size_limit if it not exists in dest
+	MsgSizeLimit = proplists:get_value(msg_size_limit, Props, proplists:get_value(msg_size_limit, Handler)),
+	PropsWithMsgSizeLimit = replace(msg_size_limit, MsgSizeLimit, PropsWithMsgPattern, undefined),
+
+
 	%% merging handler's filters and dest's filters
 	Filters = lists:flatten([proplists:get_value(filters, Props, []) | proplists:get_value(filters, Handler, [])]),
 	validate_filters(Filters),
-	PropsWithFilters = replace(filters, Filters, PropsWithMsgPattern, []),
+	PropsWithFilters = replace(filters, Filters, PropsWithMsgSizeLimit, []),
 	{DestName, PropsWithFilters};
 
 validate_dest(_,_)->
