@@ -5,7 +5,7 @@
 test()->
 	io:format("start testing~n"),
 	lists:foreach(fun(X)->
-		timer:sleep(2000),
+		timer:sleep(2300),
 		
 		% try
 		% 	A = 10/0
@@ -24,7 +24,7 @@ test()->
 		% xlogger:log(info, "Test info message")
 
 		ok
-	end, lists:seq(1, 34)),
+	end, lists:seq(1, 340)),
 	io:format("end testing~n"),
 	ok.
     

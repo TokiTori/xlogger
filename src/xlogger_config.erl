@@ -1,5 +1,5 @@
 -module(xlogger_config).
--export([get_config/0]).
+-export([get_config/0, filter1/1, filter2/1]).
 
 
 get_config()->
@@ -12,11 +12,18 @@ get_config()->
 						{size, 5242880}, 
 						{rotate, 3}, 
 						{level, error}, 
-						{msg_pattern, "[%HH:%mm:%ss] %uptime %level - %msg"}
+						{msg_pattern, "[%HH:%mm:%ss] %uptime %level - %msg1"}
+
 					]},
-					{console, []}
+					{console, [
+						
+					]}
 				]},
-				{msg_pattern, "[%HH:%mm:%ss] %uptime %level - %msg"}
+				{msg_pattern, "[%HH:%mm:%ss] %uptime %level - %msg2"},
+				{msg_size_limit, 500},
+				{filters, [
+					{xlogger_config, filter1}, {xlogger_config, filter2}
+				]}
 			]},
 			{handler2, [
 				{dest, [
@@ -27,11 +34,18 @@ get_config()->
 						{level, error}, 
 						{msg_pattern, "[%HH:%mm:%ss] %uptime %level - %msg"}, 
 						{write_delay, 3000}
-					]}
+					]},
+					{console, []}
 				]},
 				{msg_pattern, "[%HH:%mm:%ss] %uptime %level CommonPattern - %msg"}
 			]}
-		]},
-		{config_module, logger_cfg},
-		{enable_default_logger, true}
+		]}
 	].
+
+filter1(Params)->
+	{{Year, Month, Day}, {Hour, Minute, Second}} = proplists:get_value(time, Params),
+	Second > 2.
+
+filter2(Params)->
+	{{Year, Month, Day}, {Hour, Minute, Second}} = proplists:get_value(time, Params),
+	Second rem 2 == 1.
