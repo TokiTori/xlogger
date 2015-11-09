@@ -3,7 +3,7 @@
 
 -export([compile/1, format/2]).
 -define(AVAILABLE_MSG_PARAMS, lists:reverse(lists:sort(["%YYYY", "%YY", "%MM", "%M", "%DD", "%D", "%H", "%HH", 
-	"%m","%mm", "%s", "%ss", "%level", "%msg", "%uptime", "%unixtime", "%handler", "%user_module", "%module"]))).
+	"%m","%mm", "%s", "%ss", "%level", "%msg", "%pid", "%uptime", "%unixtime", "%handler", "%user_module", "%module"]))).
 -define(DEFAULT_MSG_PATTERN, ["[", '%HH', ":", '%mm', ":", '%ss', "] ", '%uptime', " ", '%level', ": ", '%msg']).
 
 
@@ -64,6 +64,13 @@ format(CompiledPattern, Params)->
 						Message;
 					_->
 						io_lib:format("~p",[Message])
+				end;
+			'%pid'->
+				case proplists:get_value(pid, Params) of
+					Pid when is_pid(Pid)->
+						pid_to_list(Pid);
+					_->
+						[]
 				end;
 			'%handler'->
 				proplists:get_value(handler, Params);
