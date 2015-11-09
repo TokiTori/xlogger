@@ -11,13 +11,10 @@ get_config()->
 						{name, "logs/%YYYY-%MM-%DD/%user_module_new1.%level.log"}, 
 						{size, 5242880}, 
 						{rotate, 3}, 
-						{level, error}, 
-						{msg_pattern, "[%HH:%mm:%ss] %uptime %level - %msg1"}
+						{msg_pattern, "[%HH:%mm:%ss] %uptime %pid %level - %msg1"}
 
 					]},
-					{console, [
-						
-					]}
+					{console, []}
 				]},
 				{msg_pattern, "[%HH:%mm:%ss] %uptime %level - %msg2"},
 				{msg_size_limit, 500},
@@ -31,7 +28,6 @@ get_config()->
 						{name, "logs/%YYYY-%MM-%DD/%user_module_new.%level.log"}, 
 						{size, 2097152}, 
 						{rotate, 3}, 
-						{level, error}, 
 						{msg_pattern, "[%HH:%mm:%ss] %uptime %level - %msg"}, 
 						{write_delay, 3000}
 					]},
@@ -44,7 +40,7 @@ get_config()->
 
 filter1(Params)->
 	{{Year, Month, Day}, {Hour, Minute, Second}} = proplists:get_value(time, Params),
-	Second > 2.
+	Second > 30.
 
 filter2(Params)->
 	{{Year, Month, Day}, {Hour, Minute, Second}} = proplists:get_value(time, Params),
