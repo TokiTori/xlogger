@@ -47,6 +47,7 @@ Configuration is a proplist. The root of this proplist has only property 'handle
 %s, %ss			Seconds and seconds with leading zero
 %level			Curent log level of message
 %msg			Just a message
+%pid			Process ID that sent message
 %unixtime       Current time in seconds since 1970-01-01
 %uptime			Uptime of virtual machine in ms
 %handler		Handler
