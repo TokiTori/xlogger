@@ -28,18 +28,34 @@ get_config_from_env()->
 	end.
 
 reload(Module)->
-	code:purge(Module),
-	code:load_file(Module),
-	%% TODO check module's modification time
-	Config = case code:ensure_loaded(Module) of 
-		{module, Module}->
-			get_config(Module, ?CONFIG_FUNCTION);
-		{error, What}->
-			xlogger:error(default, "can't load module ~p", [What]),
+	Result = try
+		case code:which(Module) of
+			ModuleWhich when is_list(ModuleWhich)->
+				LastModified = filelib:last_modified(ModuleWhich),
+				OldLastModified = get(last_modified),
+				case LastModified of
+					OldLastModified->
+						not_changed;
+					_->
+						put(last_modified, LastModified),
+						case code:ensure_loaded(Module) of
+							{module, Module}->
+								get_config(Module, ?CONFIG_FUNCTION);
+							{error, Msg}->
+								xlogger:error(default, "Can't load module ~p", [Msg]),
+								undefined
+						end
+				end;
+			E->
+				throw(E)
+		end
+	catch
+		Type:What->
+			io:format("Can't find configuration module. ~p:~p~n\t~p~n",[Type, What, erlang:get_stacktrace()]),
 			undefined
 	end,
 	erlang:send_after(2000, self(), reload),
-	Config.
+	Result.
 
 get_config(Module, Function)->
 	try
@@ -47,7 +63,7 @@ get_config(Module, Function)->
 			true->
 				case erlang:apply(Module, Function, []) of
 					Config when is_list(Config)->
-						validate_config(Config);
+						{new_config, validate_config(Config)};
 					_->
 						undefined
 				end;
@@ -143,18 +159,22 @@ replace(Key, Value, Props, IgnoreValue)->
 %% ===================================================================
 
 init([])->
-	Config = reload(?CONFIG_MODULE),
-	xlogger_handler_sup:apply_configuration(Config),
-	{ok, Config}.
+	Cfg = case reload(?CONFIG_MODULE) of
+		{new_config, Config}->
+			xlogger_handler_sup:apply_configuration(Config);
+		_->
+			[]
+	end,
+	{ok, Cfg}.
 
 handle_info(reload, _OldConfig)->
 	case reload(?CONFIG_MODULE) of
-		_OldConfig->
-			{noreply, _OldConfig};
-		NewConfig->
+		{new_config, NewConfig}->
 			xlogger:info(default, "xlogger configuration changed"),
 			xlogger_handler_sup:apply_configuration(NewConfig),
-			{noreply, NewConfig}
+			{noreply, NewConfig};
+		_->
+			{noreply, _OldConfig}
 	end.
 
 handle_call(get_config, _From, _State)->
