@@ -37,7 +37,7 @@ In other functions HandlerName is a name of handler from configuration. If the h
 Functions has two variants: prepared Message or Format string with Arguments.
 
 # Configuration
-Configuration is a proplist. The root of this proplist has only property 'handlers', which defines handlers for logger. Handler can contain 'dest' - destinations of log and 'msg_pattern' - common message pattern for all destinations in current handler. Destinations can be two types (at this moment): 'console', 'file'. Console type has properties 'msg_pattern', 'msg_size_limit'. File type has properties 'name', 'size', 'rotate', 'msg_pattern', 'msg_size_limit', 'write_delay'. Properties 'name' and 'msg_pattern' can be formatted by next params:
+Configuration is a proplist. The root of this proplist has only property 'handlers', which defines handlers for logger. Handler can contain 'dest' - destinations of log, 'msg_pattern' - common message pattern for all destinations of handler, 'filters' - common filters for all destinations of handler, {disabled, true} - to disable current logger. Destinations can be two types (at this moment): 'console', 'file'. Console type has properties 'msg_pattern', 'msg_size_limit'. File type has properties 'name', 'size', 'rotate', 'msg_pattern', 'msg_size_limit', 'write_delay'. Properties 'name' and 'msg_pattern' can be formatted by next params:
 ```
 %YYYY, %YY		Year in four-digit format and two-digit format
 %M, %MM			Months and months with leading zero
@@ -83,6 +83,7 @@ get_config()->
 				]}
 			]},
 			{handler2, [
+				{disabled, true},
 				{dest, [
 					{file, [
 						{name, "logs/%YYYY-%MM-%DD/%user_module_new.%level.log"}, 
