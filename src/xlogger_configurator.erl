@@ -93,24 +93,30 @@ validate_config(Config)->
 	ValidatedHandlers = case proplists:get_value(handlers, Config) of
 		Handlers when is_list(Handlers)->
 			HandlersWithoutDefault = proplists:delete(default, Handlers),
-			lists:map(fun(Handler)->
+			NewHandlers = lists:map(fun(Handler)->
 				validate_handler(Handler)
-			end, HandlersWithoutDefault);
+			end, HandlersWithoutDefault),
+			lists:flatten(NewHandlers);
 		_->
 			throw(handlers_not_found)
 	end,
 	lists:flatten([proplists:delete(handlers, Config), {handlers, ValidatedHandlers}]).
 
 validate_handler({HandlerName, HandlerProps})->
-	NewDests = case proplists:get_value(dest, HandlerProps) of
-		Dests when is_list(Dests), length(Dests)>0 ->
-			lists:map(fun(Dest)->
-				validate_dest(Dest, HandlerProps)
-			end, Dests);
+	case proplists:get_value(disabled, HandlerProps) of
+		true->
+			[];
 		_->
-			throw(handler_destinations_not_found)
-	end,
-	{HandlerName, lists:flatten([proplists:delete(dest, HandlerProps), {dest, NewDests}])}.
+			NewDests = case proplists:get_value(dest, HandlerProps) of
+				Dests when is_list(Dests), length(Dests)>0 ->
+					lists:map(fun(Dest)->
+						validate_dest(Dest, HandlerProps)
+					end, Dests);
+				_->
+					throw(handler_destinations_not_found)
+			end,
+			{HandlerName, lists:flatten([proplists:delete(dest, HandlerProps), {dest, NewDests}])}
+	end.
 
 validate_dest({DestName, Props}, Handler)->
 	%% using handler's msg_pattern if it not exists in dest
