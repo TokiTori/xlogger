@@ -31,11 +31,29 @@ apply_configuration(Configuration)->
 	try
 		Handlers = proplists:get_value(handlers, Configuration),
 		Children = supervisor:which_children(?MODULE),
-		update_handlers(Handlers, Children)
+		update_handlers(Handlers, Children),
+		remove_old_handlers(Handlers, Children)
 	catch
 		What:Why->
 			io:format("Can't update configuration. ~p:~p~n\t~p~n",[What, Why, erlang:get_stacktrace()])
 	end.
+
+remove_old_handlers(Handlers, Children)->
+	lists:foreach(fun(Child)->
+		ExistedHandlerName = element(1, Child),
+		case ExistedHandlerName of
+			default->
+				ok;
+			_->
+				case proplists:get_value(ExistedHandlerName, Handlers) of
+					undefined->
+						supervisor:terminate_child(?MODULE, ExistedHandlerName),
+						supervisor:delete_child(?MODULE, ExistedHandlerName);
+					_->
+						ok
+				end
+		end
+	end, Children).
 
 
 %% ===================================================================
