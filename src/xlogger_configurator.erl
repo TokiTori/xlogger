@@ -38,6 +38,8 @@ reload(Module)->
 						not_changed;
 					_->
 						put(last_modified, LastModified),
+						code:purge(Module),
+						code:load_file(Module),
 						case code:ensure_loaded(Module) of
 							{module, Module}->
 								get_config(Module, ?CONFIG_FUNCTION);
