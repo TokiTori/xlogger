@@ -36,6 +36,8 @@ reload(Module)->
 				case LastModified of
 					OldLastModified->
 						not_changed;
+					0 ->
+						not_changed;
 					_->
 						put(last_modified, LastModified),
 						code:purge(Module),
