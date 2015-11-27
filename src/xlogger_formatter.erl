@@ -19,10 +19,7 @@ compile(Pattern) when is_list(Pattern)->
 compile(_)->
 	?DEFAULT_MSG_PATTERN.
 
-format(WrongPattern, Params) when WrongPattern == undefined; WrongPattern == []->
-	format(?DEFAULT_MSG_PATTERN, Params);
-
-format(CompiledPattern, Params)->
+format(CompiledPattern, Params) when is_list(Params), length(Params)>0, is_list(CompiledPattern), length(CompiledPattern)>0->
 	DateTime = {{Year, Month, Day}, {Hour, Minute, Second}} = proplists:get_value(time, Params),
 	FormattedString = lists:concat(lists:map(fun(X)->
 		case X of
@@ -82,7 +79,10 @@ format(CompiledPattern, Params)->
 				X
 		end
 	end, CompiledPattern)),
-	FormattedString.
+	FormattedString;
+
+format(_, Params)->
+	format(?DEFAULT_MSG_PATTERN, Params).
 
 
 %% ===================================================================
@@ -110,8 +110,10 @@ f(P)->
 							Acc1 = case f(Token) of
 								{struct, ParsedPatternValue}->
 									lists:append(Acc, ParsedPatternValue);
-								PlainTextValue->
-									lists:append(Acc, [unicode:characters_to_list(list_to_binary(PlainTextValue))])
+								PlainTextValue when is_list(PlainTextValue), length(PlainTextValue)>0->
+									lists:append(Acc, [unicode:characters_to_list(list_to_binary(PlainTextValue))]);
+								_->
+									Acc
 							end,
 							lists:append(Acc1, [list_to_atom(X)])
 						end, [], Tokens),
