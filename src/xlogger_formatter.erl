@@ -135,3 +135,38 @@ is_string([H | T]) when is_integer(H)->
 
 is_string(_)->
 	false.
+
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+-endif.
+
+-ifdef(TEST).
+formatter_test()->
+	?assertEqual(compile("[%HH:%mm:%ss] %uptime %level: %msg"), ?DEFAULT_MSG_PATTERN),
+	?assertEqual(compile(
+		lists:concat(["year4: %YYYY, year2: %YY, month2: %MM, month1: %M, day2: %DD, day1: %D, hour2: %HH, hour1: %HH, "
+			"minute2: %mm, minute1: %m, second2: %ss, second1: %s, level: %level, msg: %msg, pid: %pid, uptime: %uptime, "
+			"unixtime: %unixtime, handler: %handler, user_module: %user_module, module: %module"])), 
+		["year4: ",'%YYYY',", year2: ",'%YY',", month2: ",'%MM',", month1: ",'%M',", day2: ",'%DD',", day1: ",'%D',
+		", hour2: ",'%HH',", hour1: ",'%HH',", minute2: ",'%mm',", minute1: ",'%m',", second2: ",'%ss',", second1: ",'%s',
+		", level: ",'%level',", msg: ",'%msg',", pid: ",'%pid',", uptime: ",'%uptime',", unixtime: ",'%unixtime',
+		", handler: ",'%handler',", user_module: ",'%user_module',", module: ",'%module']
+		),
+	CompiledPattern = compile(
+		lists:concat(["year4: %YYYY, year2: %YY, month2: %MM, month1: %M, day2: %DD, day1: %D, hour2: %HH, hour1: %HH, "
+			"minute2: %mm, minute1: %m, second2: %ss, second1: %s, level: %level, msg: %msg, pid: %pid, handler: %handler"])),
+	Params = [
+		{time, {{2015, 11, 28}, {13, 09, 55}}},
+		{handler, test_handler},
+		{level, error},
+		{msg, "Just test message"},
+		{pid, self()}
+		],
+	?assertEqual(format(CompiledPattern, Params),
+		lists:concat(["year4: 2015, year2: 15, month2: 11, month1: 11, day2: 28, day1: 28, hour2: 13, hour1: 13, ",
+			"minute2: 09, minute1: 9, second2: 55, second1: 55, level: error, msg: Just test message, pid: ",
+			erlang:pid_to_list(self()), ", handler: test_handler"])),
+
+
+	ok.
+-endif.
