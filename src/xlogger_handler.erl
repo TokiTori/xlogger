@@ -97,10 +97,10 @@ handle_call(_, _, State)->
 handle_cast({update_config, NewConfig}, State)->
 	NewState = try
 		OldConfig = dict:fetch(config, State),
-		if
-			OldConfig == NewConfig ->
+		case NewConfig of 
+			OldConfig ->
 				State;
-			true->
+			_->
 				CompiledMsgPatterns = get_compiled_patterns(NewConfig),
 				dict:from_list([{config, NewConfig}, {compiled_patterns, CompiledMsgPatterns}])
 		end
