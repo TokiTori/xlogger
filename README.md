@@ -107,4 +107,4 @@ filter2(Params)->
 	{{Year, Month, Day}, {Hour, Minute, Second}} = proplists:get_value(time, Params),
 	Second rem 2 == 1.
 ```
-All releases of xlogger tested by <a href="http://true-converter.com">true-converter.com</a> and <a href="http://http-master.com">http-master.com</a>
+All releases of xlogger tested by <a href="http://true-converter.com">true-converter.com</a>
