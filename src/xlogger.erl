@@ -104,7 +104,7 @@ error(HandlerName, Format, Args)->
 %% @doc Trying to determine module which executes xlogger
 get_module_name()->
 	try 
-		erlang:error("that is not error"),
+		throw("that is not error"),
 		{undefined, undefined}
 	catch
 		_:_->
